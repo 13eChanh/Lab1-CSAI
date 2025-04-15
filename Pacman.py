@@ -2,6 +2,7 @@ from board import boards
 import pygame
 import math
 import copy
+import heapq
 
 pygame.init()
 
@@ -300,7 +301,7 @@ class Ghost:
         elif self.x_pos > 900:
             self.x_pos - 30
         return self.x_pos, self.y_pos, self.direction
-    
+
     def move_blinky(self):
         # r, l, u, d
         # blinky is going to turn whenever colliding with walls, otherwise continue straight
@@ -405,6 +406,213 @@ class Ghost:
             self.x_pos = 900
         elif self.x_pos > 900:
             self.x_pos - 30
+        return self.x_pos, self.y_pos, self.direction
+
+    def move_blinky_astar(self):
+        # Định nghĩa lưới biểu diễn, chia không gian toạ độ thành lưới các ô trong ma trận, có ở hàm collisions
+        num1 = ((HEIGHT - 50) // 32)
+        num2 = (WIDTH // 30)
+
+        # Chuyển vị trí hiện tại sang tọa độ lưới
+        current_x = self.center_x // num2
+        current_y = self.center_y // num1
+
+        # Chuyển vị trí mục tiêu (Pac-Man) sang tọa độ lưới
+        target_x = self.target[0] // num2
+        target_y = self.target[1] // num1
+
+        # Triển khai thuật toán A*
+        # Định nghĩa hàm heuristic, lấy khoảng cách manhattan
+        def heuristic(a, b):
+            # Khoảng cách Manhattan làm heuristic
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+        # Các hướng di chuyển có thể (phải, trái, lên, xuống)
+        neighbors = [(0, 1), (0, -1), (-1, 0), (1, 0)]
+
+        # Hàng đợi ưu tiên cho tập mở, triển khai A* như khi làm trên giấy
+        open_set = []
+        heapq.heappush(open_set, (0, (current_x, current_y)))
+
+        # Từ điển lưu đường đi và chi phí
+        came_from = {}
+        g_score = {(current_x, current_y): 0}
+        f_score = {(current_x, current_y): heuristic((current_x, current_y), (target_x, target_y))}
+
+        # Tập hợp theo dõi các nút trong tập mở
+        open_set_hash = {(current_x, current_y)}
+
+        while open_set:
+            current = heapq.heappop(open_set)[1]
+            open_set_hash.remove(current)
+
+            # Nếu đã đến mục tiêu
+            if current == (target_x, target_y):
+                # Tái tạo đường đi
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                if path:
+                    next_step = path[-1]  # Bước đầu tiên trong đường đi
+                    # Xác định hướng dựa trên bước tiếp theo, dựa trên chênh lệch giữa x1,y1,x2,y2 mà đưa ra đường đi
+                    if next_step[0] > current_x:
+                        self.direction = 0  # phải
+                    elif next_step[0] < current_x:
+                        self.direction = 1  # trái
+                    elif next_step[1] < current_y:
+                        self.direction = 2  # lên
+                    elif next_step[1] > current_y:
+                        self.direction = 3  # xuống
+                break
+
+            for dx, dy in neighbors:
+                # Dịch thử đên vị trí tiếp theo
+                neighbor = (current[0] + dx, current[1] + dy)
+
+                # Kiểm tra xem neighbor có trong biên và đi được không
+                if 0 <= neighbor[0] < len(level[0]) and 0 <= neighbor[1] < len(level):
+                    # Kiểm tra ô có đi được không (giá trị < 3 là đi được)
+                    if level[neighbor[1]][neighbor[0]] >= 3 and not (self.in_box or self.dead):
+                        continue
+
+                    # Tính toán g score tạm thời
+                    tentative_g_score = g_score[current] + 1
+
+                    if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g_score
+                        f_score[neighbor] = tentative_g_score + heuristic(neighbor, (target_x, target_y))
+                        if neighbor not in open_set_hash:
+                            heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                            open_set_hash.add(neighbor)
+
+        if not hasattr(self, 'direction') or not self.turns[self.direction]:
+            # Tìm hướng đi khả dụng đầu tiên, trong trường hợp không tìm được đường đi, đoạn này copy nguyên từ các hàm move có sẵn từ trước
+            if self.direction == 0:
+                if self.target[0] > self.x_pos and self.turns[0]:
+                    self.x_pos += self.speed
+                elif not self.turns[0]:
+                    if self.target[1] > self.y_pos and self.turns[3]:
+                        self.direction = 3
+                        self.y_pos += self.speed
+                    elif self.target[1] < self.y_pos and self.turns[2]:
+                        self.direction = 2
+                        self.y_pos -= self.speed
+                    elif self.target[0] < self.x_pos and self.turns[1]:
+                        self.direction = 1
+                        self.x_pos -= self.speed
+                    elif self.turns[3]:
+                        self.direction = 3
+                        self.y_pos += self.speed
+                    elif self.turns[2]:
+                        self.direction = 2
+                        self.y_pos -= self.speed
+                    elif self.turns[1]:
+                        self.direction = 1
+                        self.x_pos -= self.speed
+                elif self.turns[0]:
+                    self.x_pos += self.speed
+            elif self.direction == 1:
+                if self.target[0] < self.x_pos and self.turns[1]:
+                    self.x_pos -= self.speed
+                elif not self.turns[1]:
+                    if self.target[1] > self.y_pos and self.turns[3]:
+                        self.direction = 3
+                        self.y_pos += self.speed
+                    elif self.target[1] < self.y_pos and self.turns[2]:
+                        self.direction = 2
+                        self.y_pos -= self.speed
+                    elif self.target[0] > self.x_pos and self.turns[0]:
+                        self.direction = 0
+                        self.x_pos += self.speed
+                    elif self.turns[3]:
+                        self.direction = 3
+                        self.y_pos += self.speed
+                    elif self.turns[2]:
+                        self.direction = 2
+                        self.y_pos -= self.speed
+                    elif self.turns[0]:
+                        self.direction = 0
+                        self.x_pos += self.speed
+                elif self.turns[1]:
+                    self.x_pos -= self.speed
+            elif self.direction == 2:
+                if self.target[1] < self.y_pos and self.turns[2]:
+                    self.direction = 2
+                    self.y_pos -= self.speed
+                elif not self.turns[2]:
+                    if self.target[0] > self.x_pos and self.turns[0]:
+                        self.direction = 0
+                        self.x_pos += self.speed
+                    elif self.target[0] < self.x_pos and self.turns[1]:
+                        self.direction = 1
+                        self.x_pos -= self.speed
+                    elif self.target[1] > self.y_pos and self.turns[3]:
+                        self.direction = 3
+                        self.y_pos += self.speed
+                    elif self.turns[3]:
+                        self.direction = 3
+                        self.y_pos += self.speed
+                    elif self.turns[0]:
+                        self.direction = 0
+                        self.x_pos += self.speed
+                    elif self.turns[1]:
+                        self.direction = 1
+                        self.x_pos -= self.speed
+                elif self.turns[2]:
+                    self.y_pos -= self.speed
+            elif self.direction == 3:
+                if self.target[1] > self.y_pos and self.turns[3]:
+                    self.y_pos += self.speed
+                elif not self.turns[3]:
+                    if self.target[0] > self.x_pos and self.turns[0]:
+                        self.direction = 0
+                        self.x_pos += self.speed
+                    elif self.target[0] < self.x_pos and self.turns[1]:
+                        self.direction = 1
+                        self.x_pos -= self.speed
+                    elif self.target[1] < self.y_pos and self.turns[2]:
+                        self.direction = 2
+                        self.y_pos -= self.speed
+                    elif self.turns[2]:
+                        self.direction = 2
+                        self.y_pos -= self.speed
+                    elif self.turns[0]:
+                        self.direction = 0
+                        self.x_pos += self.speed
+                    elif self.turns[1]:
+                        self.direction = 1
+                        self.x_pos -= self.speed
+                elif self.turns[3]:
+                    self.y_pos += self.speed
+            # Có thể thay đoạn trên = đoạn này nhưng tui thấy khong hay bằng oạn code tác giả viết, do có phán đoán hướng đi dựa theo toạ độ hiện tại với toạ độ đích.
+            #for i in range(4):
+            #    if self.turns[i]:
+            #        self.direction = i
+            #    break
+            else:
+                # Nếu không có hướng nào khả dụng, đứng yên
+                return self.x_pos, self.y_pos, self.direction
+
+        # Di chuyển theo hướng đã chọn
+        # Các hàm move cần trả về các giá trị self.x_pos, self.y_pos để phía dưới khi chương trình gọi
+        # Trả về các giá trị trên thì mới render con ma lên mê cung tại vị trí nào
+        if self.direction == 0 and self.turns[0]:
+            self.x_pos += self.speed
+        elif self.direction == 1 and self.turns[1]:
+            self.x_pos -= self.speed
+        elif self.direction == 2 and self.turns[2]:
+            self.y_pos -= self.speed
+        elif self.direction == 3 and self.turns[3]:
+            self.y_pos += self.speed
+
+        # Xử lý cuộn màn hình
+        if self.x_pos < -30:
+            self.x_pos = 900
+        elif self.x_pos > 900:
+            self.x_pos = -30
+
         return self.x_pos, self.y_pos, self.direction
 
     def move_inky(self):
@@ -889,7 +1097,7 @@ while run:
     if powerup:
         ghost_speeds = [1, 1, 1, 1]
     else:
-        ghost_speeds = [2, 2, 2, 2]
+        ghost_speeds = [2, 0, 0, 0]
     if eaten_ghost[0]:
         ghost_speeds[0] = 2
     if eaten_ghost[1]:
@@ -922,9 +1130,15 @@ while run:
     if moving:
         player_x, player_y = move_player(player_x, player_y)
         if not blinky.dead and not blinky.in_box:
-            blinky_x, blinky_y, blinky_direction = blinky.move_blinky()
+            blinky_x, blinky_y, blinky_direction = blinky.move_blinky_astar()  # Đổi từ move_blinky()
         else:
             blinky_x, blinky_y, blinky_direction = blinky.move_clyde()
+
+        #if not blinky.dead and not blinky.in_box:
+        #    blinky_x, blinky_y, blinky_direction = blinky.move_blinky()
+        #else:
+        #    blinky_x, blinky_y, blinky_direction = blinky.move_clyde()
+
         if not inky.dead and not inky.in_box:
             inky_x, inky_y, inky_direction = inky.move_inky()
         else:
