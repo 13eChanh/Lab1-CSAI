@@ -5,6 +5,7 @@ import copy
 import heapq
 from collections import deque
 import random
+import heapq
 
 pygame.init()
 
@@ -165,9 +166,9 @@ class Ghost:
             self.in_box = False
         return self.turns, self.in_box
 
-    def move_clyde(self):
+    def move_not_path(self):
         # r, l, u, d
-        # clyde is going to turn whenever advantageous for pursuit
+        # turn whenever advantageous for pursuit
         if self.direction == 0:
             if self.target[0] > self.x_pos and self.turns[0]:
                 self.x_pos += self.speed
@@ -303,6 +304,49 @@ class Ghost:
         elif self.x_pos > 900:
             self.x_pos - 30
         return self.x_pos, self.y_pos, self.direction
+
+
+    
+    def move_clyde(self):
+        num1 = ((HEIGHT - 50) // 32)
+        num2 = (WIDTH // 30)
+
+        current_x = int(self.center_x // num2) + 23
+        current_y = int(self.center_y // num1) + 24
+        target_x = int(self.target[0] // num2)
+        target_y = int(self.target[1] // num1)
+
+        path = ucs_search(
+            (current_x, current_y), 
+            (target_x, target_y), 
+            level, 
+            3,  
+            self.in_box, 
+            self.dead
+        )
+
+        if not path:
+            self.x_pos, self.y_pos, self.direction = self.move_not_path()
+        else:
+            next_dir = path[0]
+            self.direction = next_dir
+            if self.direction == 0 and self.turns[0]:
+                self.x_pos += self.speed
+            elif self.direction == 1 and self.turns[1]:
+                self.x_pos -= self.speed
+            elif self.direction == 2 and self.turns[2]:
+                self.y_pos -= self.speed
+            elif self.direction == 3 and self.turns[3]:
+                self.y_pos += self.speed
+
+        if self.x_pos < -30:
+            self.x_pos = 900
+        elif self.x_pos > 900:
+            self.x_pos -= 30  
+
+        return self.x_pos, self.y_pos, self.direction
+
+
 
     def move_blinky(self):
         # r, l, u, d
@@ -1080,6 +1124,38 @@ class Ghost:
     #         self.x_pos = -30
 
     #     return self.x_pos, self.y_pos, self.direction
+def ucs_search(start, target, level, ghost_id, in_box, dead):
+    rows = len(level)
+    cols = len(level[0]) if rows > 0 else 0
+    directions = [(1, 0), (-1, 0), (0, -1), (0, 1)]  # right, left, up, down
+    dir_names = [0, 1, 2, 3]
+    heap = []
+    heapq.heappush(heap, (0, start[0], start[1], []))
+    visited = set()
+
+    while heap:
+        cost, x, y, path = heapq.heappop(heap)
+        if (x, y) == target:
+            return path
+        if (x, y) in visited:
+            continue
+        visited.add((x, y))
+
+        for i in range(4):
+            dx, dy = directions[i]
+            new_x = x + dx
+            new_y = y + dy
+            if 0 <= new_x < cols and 0 <= new_y < rows:
+                cell_value = level[new_y][new_x]
+                # Điều kiện di chuyển:
+                # - Ô trống/dot (cell_value < 3)
+                # - Cổng (cell_value == 9) nếu Ghost đang trong hộp hoặc đã chết
+                if cell_value < 3 or (cell_value == 9 and (in_box or dead)):
+                    new_cost = cost + 1
+                    new_path = path + [dir_names[i]]
+                    heapq.heappush(heap, (new_cost, new_x, new_y, new_path))
+    return []  
+
 def draw_mics():
     score_text = font.render(f'Score: {score}', True, 'white')
     screen.blit(score_text, (10, HEIGHT - 40))
@@ -1315,7 +1391,7 @@ while run:
     if powerup:
         ghost_speeds = [1, 1, 1, 1]
     else:
-        ghost_speeds = [2, 2, 2, 0]
+        ghost_speeds = [2, 2, 2, 2]
     if eaten_ghost[0]:
         ghost_speeds[0] = 2
     if eaten_ghost[1]:
