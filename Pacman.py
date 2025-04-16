@@ -617,6 +617,7 @@ class Ghost:
 
         return self.x_pos, self.y_pos, self.direction
 
+
     def move_inky(self):
         # Chuyển hệ tọa độ pixel sang tọa độ lưới
         num1 = ((HEIGHT - 50) // 32)
