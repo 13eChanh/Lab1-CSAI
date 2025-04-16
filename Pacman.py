@@ -894,7 +894,7 @@ class Ghost:
                     # Kiem tra vi bien co di duoc khong
                     if 0 <= neighbor[0] < len(level[0]) and 0 <= neighbor[1] < len(level):
                         # Neu vi tri ke ben canh hop le va chua duoc tham
-                        if ((level[neighbor[1]][neighbor[0]] <= 3) or (level[neighbor[1]][neighbor[0]] == 9)) and neighbor not in visited:
+                        if ((level[neighbor[1]][neighbor[0]] < 3) or (level[neighbor[1]][neighbor[0]] == 9)) and neighbor not in visited:
                             # Them vao tap hop nut cha neu chua co
                             if neighbor not in parent:
                                 parent[neighbor] = current
