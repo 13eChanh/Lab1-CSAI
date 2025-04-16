@@ -1023,10 +1023,7 @@ class Ghost:
             else:
                 # Nếu không có hướng nào khả dụng, đứng yên
                 return self.x_pos, self.y_pos, self.direction
-
-        # Di chuyển theo hướng đã chọn
-        # Các hàm move cần trả về các giá trị self.x_pos, self.y_pos để phía dưới khi chương trình gọi
-        # Trả về các giá trị trên thì mới render con ma lên mê cung tại vị trí nào
+                
         if self.direction == 0 and self.turns[0]:
             self.x_pos += self.speed
         elif self.direction == 1 and self.turns[1]:
@@ -1044,86 +1041,7 @@ class Ghost:
 
         return self.x_pos, self.y_pos, self.direction
     
-    # def move_pinky_joreii(self):
-    #     # Chuyển hệ tọa độ pixel sang tọa độ lưới
-    #     num1 = ((HEIGHT - 50) // 32)
-    #     num2 = (WIDTH // 30)
-    #     current_x = self.center_x // num2
-    #     current_y = self.center_y // num1
-    #     target_x = self.target[0] // num2
-    #     target_y = self.target[1] // num1
-
-    #     # DFS
-    #     def dfs(start, goal):
-    #         stack = deque([start])
-    #         visited = set()
-    #         parent = {}
-    #         while stack:
-    #             current = stack.pop()
-    #             if current == goal:
-    #                 path = []
-    #                 while current in parent:
-    #                     path.append(current)
-    #                     current = parent[current]
-    #                 path.reverse()
-    #                 return path
-    #             visited.add(current)
-    #             for dx, dy in [(1,0), (-1,0), (0,1), (0,-1)]:
-    #                 neighbor = (current[0] + dx, current[1] + dy)
-    #                 if (0 <= neighbor[0] < len(level[0]) and
-    #                     0 <= neighbor[1] < len(level)):
-    #                     val = level[neighbor[1]][neighbor[0]]
-    #                     if (val <= 3 or val == 9) and neighbor not in visited:
-    #                         if neighbor not in parent:
-    #                             parent[neighbor] = current
-    #                         stack.append(neighbor)
-    #         return None
-
-    #     path = dfs((current_x, current_y), (target_x, target_y))
-
-    #     # Cập nhật hướng nếu tìm được đường đi
-    #     if path and len(path) > 1:
-    #         next_step = path[1]
-    #         dx = next_step[0] - current_x
-    #         dy = next_step[1] - current_y
-    #         if dx == 1: self.direction = 2  # phải
-    #         elif dx == -1: self.direction = 3  # trái
-    #         elif dy == -1: self.direction = 0  # lên
-    #         elif dy == 1: self.direction = 1  # xuống
-
-    #     # Di chuyển theo hướng đã chọn (nếu hợp lệ)
-    #     moved = False
-    #     if self.direction == 0 and self.turns[0]:
-    #         self.x_pos += self.speed
-    #         moved = True
-    #     elif self.direction == 1 and self.turns[1]:
-    #         self.x_pos -= self.speed
-    #         moved = True
-    #     elif self.direction == 2 and self.turns[2]:
-    #         self.y_pos -= self.speed
-    #         moved = True
-    #     elif self.direction == 3 and self.turns[3]:
-    #         self.y_pos += self.speed
-    #         moved = True
-
-    #     # Nếu không thể đi hướng đã chọn, fallback chọn hướng bất kỳ hợp lệ
-    #     if not moved:
-    #         for i in range(4):
-    #             if self.turns[i]:
-    #                 self.direction = i
-    #                 if i == 0: self.x_pos += self.speed
-    #                 elif i == 1: self.x_pos -= self.speed
-    #                 elif i == 2: self.y_pos -= self.speed
-    #                 elif i == 3: self.y_pos += self.speed
-    #                 break
-
-    #     # Cập nhật cuộn màn hình
-    #     if self.x_pos < -30:
-    #         self.x_pos = 900
-    #     elif self.x_pos > 900:
-    #         self.x_pos = -30
-
-    #     return self.x_pos, self.y_pos, self.direction
+   
 def ucs_search(start, target, level, ghost_id, in_box, dead):
     rows = len(level)
     cols = len(level[0]) if rows > 0 else 0
