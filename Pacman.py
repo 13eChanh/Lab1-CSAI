@@ -904,9 +904,9 @@ class Ghost:
             return None
         
         pinky_path = joreii_dfs((current_x, current_y), (target_x, target_y))
+        
         if pinky_path and len(pinky_path) > 1:
-            next_step = pinky_path[1]  # Bước đầu tiên trong đường đi
-            # Xác định hướng dựa trên bước tiếp theo, dựa trên chênh lệch giữa x1,y1,x2,y2 mà đưa ra đường đi
+            next_step = pinky_path[0]
             if next_step[0] > current_x:
                 self.direction = 0  # phải
             elif next_step[0] < current_x:
@@ -914,7 +914,7 @@ class Ghost:
             elif next_step[1] < current_y:
                 self.direction = 2  # lên
             elif next_step[1] > current_y:
-                self.direction = 3  # xuống        
+                self.direction = 3  # xuống      
         
         if not hasattr(self, 'direction') or not self.turns[self.direction]:
             # Tìm hướng đi khả dụng đầu tiên, trong trường hợp không tìm được đường đi, đoạn này copy nguyên từ các hàm move có sẵn từ trước
@@ -1015,15 +1015,11 @@ class Ghost:
                         self.x_pos -= self.speed
                 elif self.turns[3]:
                     self.y_pos += self.speed
-            # Có thể thay đoạn trên = đoạn này nhưng tui thấy khong hay bằng oạn code tác giả viết, do có phán đoán hướng đi dựa theo toạ độ hiện tại với toạ độ đích.
-            #for i in range(4):
-            #    if self.turns[i]:
-            #        self.direction = i
-            #    break
             else:
                 # Nếu không có hướng nào khả dụng, đứng yên
                 return self.x_pos, self.y_pos, self.direction
-                
+
+        # Di chuyển theo hướng đã chọn
         if self.direction == 0 and self.turns[0]:
             self.x_pos += self.speed
         elif self.direction == 1 and self.turns[1]:
@@ -1039,7 +1035,7 @@ class Ghost:
         elif self.x_pos > 900:
             self.x_pos = -30
 
-        return self.x_pos, self.y_pos, self.direction
+        return self.x_pos, self.y_pos, self.direction     
     
    
 def ucs_search(start, target, level, ghost_id, in_box, dead):
@@ -1359,7 +1355,7 @@ while run:
         #     pinky_x, pinky_y, pinky_direction = pinky.move_pinky()
         # else:
         #     pinky_x, pinky_y, pinky_direction = pinky.move_clyde()
-        if not pinky.dead:
+        if not pinky.dead and nor pinky.in_box:
             pinky_x, pinky_y, pinky_direction = pinky.move_pinky_joreii()
         else:
             pinky_x, pinky_y, pinky_direction = pinky.move_clyde()
