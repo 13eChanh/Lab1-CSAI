@@ -1355,7 +1355,7 @@ while run:
         #     pinky_x, pinky_y, pinky_direction = pinky.move_pinky()
         # else:
         #     pinky_x, pinky_y, pinky_direction = pinky.move_clyde()
-        if not pinky.dead and nor pinky.in_box:
+        if not pinky.dead and not pinky.in_box:
             pinky_x, pinky_y, pinky_direction = pinky.move_pinky_joreii()
         else:
             pinky_x, pinky_y, pinky_direction = pinky.move_clyde()
