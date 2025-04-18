@@ -5,6 +5,8 @@ import copy
 import heapq
 from collections import deque
 import heapq
+import sys
+import tracemalloc
 
 pygame.init()
 
@@ -30,6 +32,8 @@ dead_images = pygame.transform.scale(pygame.image.load(f'assets/ghost_images/dea
 game_state = "menu"
 selected_level = 1
 total_levels = 6
+expanded_nodes = 0
+memory_usage = 0
 
 def reset_game(level_num):
     global player_x, player_y, direction, blinky_x, blinky_y, blinky_direction, inky_x, inky_y, inky_direction
@@ -360,6 +364,45 @@ class Ghost:
         return self.x_pos, self.y_pos, self.direction
 
     def move_clyde(self):
+        def ucs_search(start, target, level, ghost_id, in_box, dead):
+            global expanded_nodes, memory_usage
+            expanded_nodes = 0
+            tracemalloc.start()
+            
+            rows = len(level)
+            cols = len(level[0]) if rows > 0 else 0
+            directions = [(1, 0), (-1, 0), (0, -1), (0, 1)]  # right, left, up, down
+            dir_names = [0, 1, 2, 3]
+            heap = []
+            heapq.heappush(heap, (0, start[0], start[1], []))
+            visited = set()
+
+            while heap:
+                cost, x, y, path = heapq.heappop(heap)
+                expanded_nodes += 1
+                if (x, y) == target:
+                    current, peak = tracemalloc.get_traced_memory()
+                    memory_usage = peak / 1024  
+                    tracemalloc.stop()
+                    return path
+                if (x, y) in visited:
+                    continue
+                visited.add((x, y))
+
+                for i in range(4):
+                    dx, dy = directions[i]
+                    new_x = x + dx
+                    new_y = y + dy
+                    if 0 <= new_x < cols and 0 <= new_y < rows:
+                        cell_value = level[new_y][new_x]
+                        if cell_value < 3 or (cell_value == 9 and (in_box or dead)):
+                            new_cost = cost + 1
+                            new_path = path + [dir_names[i]]
+                            heapq.heappush(heap, (new_cost, new_x, new_y, new_path))
+            
+            tracemalloc.stop()
+            return []
+
         num1 = ((HEIGHT - 50) // 32)
         num2 = (WIDTH // 30)
 
@@ -398,82 +441,11 @@ class Ghost:
 
         return self.x_pos, self.y_pos, self.direction
 
-    def move_blinky_astar(self):
-        num1 = ((HEIGHT - 50) // 32)
-        num2 = (WIDTH // 30)
-
-        current_x = self.center_x // num2
-        current_y = self.center_y // num1
-
-        target_x = self.target[0] // num2
-        target_y = self.target[1] // num1
-
-        def heuristic(a, b):
-            return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-        neighbors = [(0, 1), (0, -1), (-1, 0), (1, 0)]
-        open_set = []
-        heapq.heappush(open_set, (0, (current_x, current_y)))
-        came_from = {}
-        g_score = {(current_x, current_y): 0}
-        f_score = {(current_x, current_y): heuristic((current_x, current_y), (target_x, target_y))}
-        open_set_hash = {(current_x, current_y)}
-
-        while open_set:
-            current = heapq.heappop(open_set)[1]
-            open_set_hash.remove(current)
-
-            if current == (target_x, target_y):
-                path = []
-                while current in came_from:
-                    path.append(current)
-                    current = came_from[current]
-                if path:
-                    next_step = path[-1]
-                    if next_step[0] > current_x:
-                        self.direction = 0
-                    elif next_step[0] < current_x:
-                        self.direction = 1
-                    elif next_step[1] < current_y:
-                        self.direction = 2
-                    elif next_step[1] > current_y:
-                        self.direction = 3                    
-                break
-
-            for dx, dy in neighbors:
-                neighbor = (current[0] + dx, current[1] + dy)
-                if 0 <= neighbor[0] < len(level[0]) and 0 <= neighbor[1] < len(level):
-                    if level[neighbor[1]][neighbor[0]] >= 3 and not (self.in_box or self.dead):
-                        continue                    
-                    tentative_g_score = g_score[current] + 1
-
-                    if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
-                        came_from[neighbor] = current
-                        g_score[neighbor] = tentative_g_score
-                        f_score[neighbor] = tentative_g_score + heuristic(neighbor, (target_x, target_y))
-                        if neighbor not in open_set_hash:
-                            heapq.heappush(open_set, (f_score[neighbor], neighbor))
-                            open_set_hash.add(neighbor)
-
-        if not hasattr(self, 'direction') or not self.turns[self.direction]:
-            self.x_pos, self.y_pos, self.direction = self.move_not_path()
-
-        if self.direction == 0 and self.turns[0]:
-            self.x_pos += self.speed
-        elif self.direction == 1 and self.turns[1]:
-            self.x_pos -= self.speed
-        elif self.direction == 2 and self.turns[2]:
-            self.y_pos -= self.speed
-        elif self.direction == 3 and self.turns[3]:
-            self.y_pos += self.speed
-
-        if self.x_pos < -30:
-            self.x_pos = 900
-        elif self.x_pos > 900:
-            self.x_pos = -30
-        return self.x_pos, self.y_pos, self.direction
-
     def move_inky(self):
+        global expanded_nodes, memory_usage
+        expanded_nodes = 0
+        tracemalloc.start()
+        
         num1 = ((HEIGHT - 50) // 32)
         num2 = (WIDTH // 30)
         current_x = self.center_x // num2
@@ -482,12 +454,14 @@ class Ghost:
         target_y = self.target[1] // num1
 
         def bfs(start, goal):
+            global expanded_nodes
             queue = deque([start])
             visited = set()
             parent = {}
             
             while queue:
                 current = queue.popleft()
+                expanded_nodes += 1
                 if current == goal:
                     path = []
                     while current in parent:
@@ -509,7 +483,10 @@ class Ghost:
                             queue.append(neighbor)
             return None
 
-        path = bfs((current_x, current_y), (target_x, target_y))
+        path = bfs((current_x, current_y), (target_x, target_y)) 
+        current, peak = tracemalloc.get_traced_memory()
+        memory_usage = peak / 1024  # Convert to KB
+        tracemalloc.stop()
         
         if path and len(path) > 1:
             next_step = path[1]
@@ -546,6 +523,10 @@ class Ghost:
         return self.x_pos, self.y_pos, self.direction
 
     def move_pinky_joreii(self):
+        global expanded_nodes, memory_usage
+        expanded_nodes = 0
+        tracemalloc.start()
+        
         num1 = ((HEIGHT - 50) // 32)
         num2 = (WIDTH // 30)
 
@@ -556,12 +537,14 @@ class Ghost:
         target_y = self.target[1] // num1
 
         def joreii_dfs(start, goal):
+            global expanded_nodes
             stack = deque([start])
             visited = set()
             parent = {}
             
             while stack:
                 current = stack.pop()
+                expanded_nodes += 1
                 if current == goal:
                     path = []
                     while current != start:
@@ -582,6 +565,10 @@ class Ghost:
             return None
         
         pinky_path = joreii_dfs((current_x, current_y), (target_x, target_y))
+        current, peak = tracemalloc.get_traced_memory()
+        memory_usage = peak / 1024  # Convert to KB
+        tracemalloc.stop()
+        
         if pinky_path and len(pinky_path) > 1:
             next_step = pinky_path[1]
             if next_step[0] > current_x:
@@ -612,38 +599,94 @@ class Ghost:
 
         return self.x_pos, self.y_pos, self.direction
 
-def ucs_search(start, target, level, ghost_id, in_box, dead):
-    rows = len(level)
-    cols = len(level[0]) if rows > 0 else 0
-    directions = [(1, 0), (-1, 0), (0, -1), (0, 1)]  # right, left, up, down
-    dir_names = [0, 1, 2, 3]
-    heap = []
-    heapq.heappush(heap, (0, start[0], start[1], []))
-    visited = set()
+    def move_blinky_astar(self):
+        global expanded_nodes, memory_usage
+        expanded_nodes = 0
+        tracemalloc.start()
+        
+        num1 = ((HEIGHT - 50) // 32)
+        num2 = (WIDTH // 30)
 
-    while heap:
-        cost, x, y, path = heapq.heappop(heap)
-        if (x, y) == target:
-            return path
-        if (x, y) in visited:
-            continue
-        visited.add((x, y))
+        current_x = self.center_x // num2
+        current_y = self.center_y // num1
 
-        for i in range(4):
-            dx, dy = directions[i]
-            new_x = x + dx
-            new_y = y + dy
-            if 0 <= new_x < cols and 0 <= new_y < rows:
-                cell_value = level[new_y][new_x]
-                if cell_value < 3 or (cell_value == 9 and (in_box or dead)):
-                    new_cost = cost + 1
-                    new_path = path + [dir_names[i]]
-                    heapq.heappush(heap, (new_cost, new_x, new_y, new_path))
-    return []  
+        target_x = self.target[0] // num2
+        target_y = self.target[1] // num1
+
+        def heuristic(a, b):
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+        neighbors = [(0, 1), (0, -1), (-1, 0), (1, 0)]
+        open_set = []
+        heapq.heappush(open_set, (0, (current_x, current_y)))
+        came_from = {}
+        g_score = {(current_x, current_y): 0}
+        f_score = {(current_x, current_y): heuristic((current_x, current_y), (target_x, target_y))}
+        open_set_hash = {(current_x, current_y)}
+
+        while open_set:
+            current = heapq.heappop(open_set)[1]
+            expanded_nodes += 1
+            open_set_hash.remove(current)
+
+            if current == (target_x, target_y):
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                if path:
+                    next_step = path[-1]
+                    if next_step[0] > current_x:
+                        self.direction = 0
+                    elif next_step[0] < current_x:
+                        self.direction = 1
+                    elif next_step[1] < current_y:
+                        self.direction = 2
+                    elif next_step[1] > current_y:
+                        self.direction = 3                    
+                break
+
+            for dx, dy in neighbors:
+                neighbor = (current[0] + dx, current[1] + dy)
+                if 0 <= neighbor[0] < len(level[0]) and 0 <= neighbor[1] < len(level):
+                    if level[neighbor[1]][neighbor[0]] >= 3 and not (self.in_box or self.dead):
+                        continue                    
+                    tentative_g_score = g_score[current] + 1
+
+                    if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g_score
+                        f_score[neighbor] = tentative_g_score + heuristic(neighbor, (target_x, target_y))
+                        if neighbor not in open_set_hash:
+                            heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                            open_set_hash.add(neighbor)
+
+        current, peak = tracemalloc.get_traced_memory()
+        memory_usage = peak / 1024  # Convert to KB
+        tracemalloc.stop()
+
+        if not hasattr(self, 'direction') or not self.turns[self.direction]:
+            self.x_pos, self.y_pos, self.direction = self.move_not_path()
+
+        if self.direction == 0 and self.turns[0]:
+            self.x_pos += self.speed
+        elif self.direction == 1 and self.turns[1]:
+            self.x_pos -= self.speed
+        elif self.direction == 2 and self.turns[2]:
+            self.y_pos -= self.speed
+        elif self.direction == 3 and self.turns[3]:
+            self.y_pos += self.speed
+
+        if self.x_pos < -30:
+            self.x_pos = 900
+        elif self.x_pos > 900:
+            self.x_pos = -30
+        return self.x_pos, self.y_pos, self.direction
 
 def draw_mics():
     score_text = font.render(f'Score: {score}', True, 'white')
     screen.blit(score_text, (10, HEIGHT - 40))
+        
     if powerup:
         pygame.draw.circle(screen, 'blue', (140, 930), 15)
     for i in range(lives):
@@ -661,6 +704,10 @@ def draw_mics():
                 timer_text = font.render(f"{ghost_name.capitalize()} Time: {time_taken:.2f}s", True, 'red')
                 screen.blit(timer_text, (100, y_offset))
                 y_offset += 30
+
+        if selected_level in [1, 2, 3, 4]:
+            stats_text = font.render(f'Nodes: {expanded_nodes}   Memory: {memory_usage:.2f} KB', True, 'red')
+            screen.blit(stats_text, (240, 350)) 
     if game_won:
         pygame.draw.rect(screen, 'white', [50, 200, 800, 300], 0, 10)
         pygame.draw.rect(screen, 'dark gray', [70, 220, 760, 260], 0, 10)
