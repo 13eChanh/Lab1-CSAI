@@ -30,12 +30,12 @@ class Game:
         self.reset_game(6)
 
     def reset_game(self, level_num):
-        self.player_x = 430
-        self.player_y = 663
-        self.direction = 0
+        self.player_x = 50
+        self.player_y = 578
+        self.direction = 1
         self.blinky_x = 430
         self.blinky_y = 328
-        self.blinky_direction = 0
+        self.blinky_direction = 1
         self.inky_x = 370
         self.inky_y = 388
         self.inky_direction = 2
@@ -45,7 +45,7 @@ class Game:
         self.clyde_x = 490
         self.clyde_y = 388
         self.clyde_direction = 2
-        self.player_speed = 1
+        self.player_speed = 2
         self.blinky_box = False
         self.pinky_box = False
         self.inky_box = False
