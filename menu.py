@@ -2,7 +2,6 @@ import pygame
 from constants import *
 from game_state import screen, total_levels, selected_level
 
-
 def draw_menu():
     screen.fill(BLACK)
     title_font = pygame.font.SysFont('Arial', 50)

@@ -93,16 +93,14 @@ def reset_game(level_num):
 
 
 # Main game loop
-def main():
-    global game_state, selected_level, total_levels, counter, powerup, power_counter, game_over, game_won, startup_counter, player_x, player_y, eaten_ghost, blinky_dead, inky_dead
 
+def main():
+    global game_state, selected_level, total_levels
     run = True
     while run:
         timer.tick(FPS)
-
         if game_state == MENU:
             draw_menu()
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
