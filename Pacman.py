@@ -1067,9 +1067,9 @@ while run:
             
             for i, (ghost_name, ghost) in enumerate(ghosts):
                 if player_circle.colliderect(ghost.rect) and not ghost.dead:
-                    if ghost_timers[ghost_name]['active']:
+                    if ghost_timers[ghost_name]['active'] and ghost_timers[ghost_name]['end'] == 0:  
                         ghost_timers[ghost_name]['end'] = pygame.time.get_ticks()
-                    ghost_collisions[i] = True  
+                    ghost_collisions[i] = True 
 
             if all(ghost_collisions):
                 game_over = True
