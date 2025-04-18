@@ -1,3 +1,5 @@
+import sys
+
 import pygame
 from collections import deque
 import heapq
@@ -188,11 +190,14 @@ def ucs_search(start, target, level, ghost_id, in_box, dead):
     heap = []
     heapq.heappush(heap, (0, start[0], start[1], []))
     visited = set()
+    nodes_expanded = 0
+    max_memory = sys.getsizeof(heap) + sys.getsizeof(visited)
 
     while heap:
+        nodes_expanded += 1
         cost, x, y, path = heapq.heappop(heap)
         if (x, y) == target:
-            return path
+            return path, nodes_expanded, max_memory
         if (x, y) in visited:
             continue
         visited.add((x, y))
@@ -207,4 +212,6 @@ def ucs_search(start, target, level, ghost_id, in_box, dead):
                     new_cost = cost + 1
                     new_path = path + [dir_names[i]]
                     heapq.heappush(heap, (new_cost, new_x, new_y, new_path))
-    return []
+                    current_memory = sys.getsizeof(heap) + sys.getsizeof(visited)
+                    max_memory = max(max_memory, current_memory)
+    return [], nodes_expanded, max_memory

@@ -1,5 +1,8 @@
+import json
+
 import pygame
 from game import Game
+from ghost import performance_data
 from render import draw_menu
 
 pygame.init()
@@ -68,6 +71,10 @@ def main():
                     if event.key == pygame.K_DOWN and game.direction_command == 3:
                         game.direction_command = 3
         pygame.display.flip()
+
+    with open('performance_data.json', 'w') as f:
+        json.dump(performance_data, f)
+
     pygame.quit()
 if __name__ == "__main__":
     main()

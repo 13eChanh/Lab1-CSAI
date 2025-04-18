@@ -1,8 +1,17 @@
 import pygame
+import time
+import sys
 from utils import ucs_search
 from collections import deque
 import heapq
 
+# Dictionary to store performance metrics
+performance_data = {
+    'bfs': {'times': [], 'memory': [], 'nodes': []},
+    'dfs': {'times': [], 'memory': [], 'nodes': []},
+    'ucs': {'times': [], 'memory': [], 'nodes': []},
+    'astar': {'times': [], 'memory': [], 'nodes': []}
+}
 
 class Ghost:
     def __init__(self, x_coord, y_coord, target, speed, img, direct, dead, box, id, level, powerup, eaten_ghost,
@@ -247,6 +256,7 @@ class Ghost:
         return self.x_pos, self.y_pos, self.direction
 
     def move_clyde(self):
+        start_time = time.time()
         num1 = (self.HEIGHT - 50) // 32
         num2 = (self.WIDTH // 30)
         current_x = int(self.center_x // num2)
@@ -254,7 +264,7 @@ class Ghost:
         target_x = int(self.target[0] // num2)
         target_y = int(self.target[1] // num1)
 
-        path = ucs_search(
+        path, nodes_expanded, max_memory = ucs_search(
             (current_x, current_y),
             (target_x, target_y),
             self.level,
@@ -262,6 +272,11 @@ class Ghost:
             self.in_box,
             self.dead
         )
+
+        end_time = time.time()
+        performance_data['ucs']['times'].append((end_time - start_time) * 1000)  # Convert to milliseconds
+        performance_data['ucs']['nodes'].append(nodes_expanded)
+        performance_data['ucs']['memory'].append(max_memory)
 
         if not path:
             self.x_pos, self.y_pos, self.direction = self.move_not_path()
@@ -285,6 +300,7 @@ class Ghost:
         return self.x_pos, self.y_pos, self.direction
 
     def move_blinky_astar(self):
+        start_time = time.time()
         num1 = (self.HEIGHT - 50) // 32
         num2 = (self.WIDTH // 30)
         current_x = self.center_x // num2
@@ -302,8 +318,12 @@ class Ghost:
         g_score = {(current_x, current_y): 0}
         f_score = {(current_x, current_y): heuristic((current_x, current_y), (target_x, target_y))}
         open_set_hash = {(current_x, current_y)}
+        nodes_expanded = 0
+        max_memory = sys.getsizeof(open_set) + sys.getsizeof(came_from) + sys.getsizeof(g_score) + sys.getsizeof(
+            f_score) + sys.getsizeof(open_set_hash)
 
         while open_set:
+            nodes_expanded += 1
             current = heapq.heappop(open_set)[1]
             open_set_hash.remove(current)
 
@@ -337,6 +357,14 @@ class Ghost:
                         if neighbor not in open_set_hash:
                             heapq.heappush(open_set, (f_score[neighbor], neighbor))
                             open_set_hash.add(neighbor)
+                            current_memory = sys.getsizeof(open_set) + sys.getsizeof(came_from) + sys.getsizeof(
+                                g_score) + sys.getsizeof(f_score) + sys.getsizeof(open_set_hash)
+                            max_memory = max(max_memory, current_memory)
+
+        end_time = time.time()
+        performance_data['astar']['times'].append((end_time - start_time) * 1000)  # Convert to milliseconds
+        performance_data['astar']['nodes'].append(nodes_expanded)
+        performance_data['astar']['memory'].append(max_memory)
 
         if not hasattr(self, 'direction') or not self.turns[self.direction]:
             self.x_pos, self.y_pos, self.direction = self.move_not_path()
@@ -357,6 +385,7 @@ class Ghost:
         return self.x_pos, self.y_pos, self.direction
 
     def move_inky(self):
+        start_time = time.time()
         num1 = (self.HEIGHT - 50) // 32
         num2 = (self.WIDTH // 30)
         current_x = self.center_x // num2
@@ -368,8 +397,11 @@ class Ghost:
             queue = deque([start])
             visited = set()
             parent = {}
+            nodes_expanded = 0
+            max_memory = sys.getsizeof(queue) + sys.getsizeof(visited) + sys.getsizeof(parent)
 
             while queue:
+                nodes_expanded += 1
                 current = queue.popleft()
                 if current == goal:
                     path = []
@@ -378,7 +410,7 @@ class Ghost:
                         current = parent[current]
                     path.append(start)
                     path.reverse()
-                    return path
+                    return path, nodes_expanded, max_memory
 
                 visited.add(current)
                 for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
@@ -390,9 +422,16 @@ class Ghost:
                             if neighbor not in parent:
                                 parent[neighbor] = current
                             queue.append(neighbor)
-            return None
+                            current_memory = sys.getsizeof(queue) + sys.getsizeof(visited) + sys.getsizeof(parent)
+                            max_memory = max(max_memory, current_memory)
+            return None, nodes_expanded, max_memory
 
-        path = bfs((current_x, current_y), (target_x, target_y))
+        path, nodes_expanded, max_memory = bfs((current_x, current_y), (target_x, target_y))
+
+        end_time = time.time()
+        performance_data['bfs']['times'].append((end_time - start_time) * 1000)  # Convert to milliseconds
+        performance_data['bfs']['nodes'].append(nodes_expanded)
+        performance_data['bfs']['memory'].append(max_memory)
 
         if path and len(path) > 1:
             next_step = path[1]
@@ -433,6 +472,7 @@ class Ghost:
         return self.x_pos, self.y_pos, self.direction
 
     def move_pinky_joreii(self):
+        start_time = time.time()
         num1 = (self.HEIGHT - 50) // 32
         num2 = (self.WIDTH // 30)
         current_x = self.center_x // num2
@@ -444,8 +484,11 @@ class Ghost:
             stack = deque([start])
             visited = set()
             parent = {}
+            nodes_expanded = 0
+            max_memory = sys.getsizeof(stack) + sys.getsizeof(visited) + sys.getsizeof(parent)
 
             while stack:
+                nodes_expanded += 1
                 current = stack.pop()
                 if current == goal:
                     path = []
@@ -454,7 +497,7 @@ class Ghost:
                         current = parent[current]
                     path.append(start)
                     path.reverse()
-                    return path
+                    return path, nodes_expanded, max_memory
 
                 visited.add(current)
                 for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
@@ -465,9 +508,17 @@ class Ghost:
                             if neighbor not in parent:
                                 parent[neighbor] = current
                             stack.append(neighbor)
-            return None
+                            current_memory = sys.getsizeof(stack) + sys.getsizeof(visited) + sys.getsizeof(parent)
+                            max_memory = max(max_memory, current_memory)
+            return None, nodes_expanded, max_memory
 
-        pinky_path = joreii_dfs((current_x, current_y), (target_x, target_y))
+        pinky_path, nodes_expanded, max_memory = joreii_dfs((current_x, current_y), (target_x, target_y))
+
+        end_time = time.time()
+        performance_data['dfs']['times'].append((end_time - start_time) * 1000)  # Convert to milliseconds
+        performance_data['dfs']['nodes'].append(nodes_expanded)
+        performance_data['dfs']['memory'].append(max_memory)
+
         if pinky_path and len(pinky_path) > 1:
             next_step = pinky_path[1]
             if next_step[0] > current_x:
