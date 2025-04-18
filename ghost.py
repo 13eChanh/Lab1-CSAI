@@ -6,7 +6,7 @@ import heapq
 
 class Ghost:
     def __init__(self, x_coord, y_coord, target, speed, img, direct, dead, box, id, level, powerup, eaten_ghost,
-                 spooked_img, dead_img, HEIGHT, WIDTH):
+                 spooked_img, dead_img, HEIGHT, WIDTH, screen):
         self.x_pos = x_coord
         self.y_pos = y_coord
         self.center_x = self.x_pos + 22
@@ -20,6 +20,7 @@ class Ghost:
         self.id = id
         self.level = level
         self.powerup = powerup
+        self.screen = screen
         self.eaten_ghost = eaten_ghost
         self.spooked_img = spooked_img
         self.dead_img = dead_img

@@ -67,11 +67,7 @@ def main():
                         game.direction_command = 2
                     if event.key == pygame.K_DOWN and game.direction_command == 3:
                         game.direction_command = 3
-
         pygame.display.flip()
-
     pygame.quit()
-
-
 if __name__ == "__main__":
     main()

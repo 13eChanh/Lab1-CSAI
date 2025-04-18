@@ -45,7 +45,7 @@ class Game:
         self.clyde_x = 490
         self.clyde_y = 388
         self.clyde_direction = 2
-        self.player_speed = 2
+        self.player_speed = 1
         self.blinky_box = False
         self.pinky_box = False
         self.inky_box = False
@@ -135,18 +135,19 @@ class Game:
         self.player_circle = pygame.draw.circle(self.screen, 'purple', (self.center_x, self.center_y), 20, 2)
         draw_player(self.screen, self.player_x, self.player_y, self.direction, self.player_images, self.counter)
 
+        # Pass self.screen to Ghost instances
         blinky = Ghost(self.blinky_x, self.blinky_y, self.targets[0], self.ghost_speeds[0], self.blinky_images,
                        self.blinky_direction, self.blinky_dead, self.blinky_box, 0, self.level, self.powerup,
-                       self.eaten_ghost, self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH)
+                       self.eaten_ghost, self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH, self.screen)
         inky = Ghost(self.inky_x, self.inky_y, self.targets[1], self.ghost_speeds[1], self.inky_images,
                      self.inky_direction, self.inky_dead, self.inky_box, 1, self.level, self.powerup, self.eaten_ghost,
-                     self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH)
+                     self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH, self.screen)
         pinky = Ghost(self.pinky_x, self.pinky_y, self.targets[2], self.ghost_speeds[2], self.pinky_images,
                       self.pinky_direction, self.pinky_dead, self.pinky_box, 2, self.level, self.powerup,
-                      self.eaten_ghost, self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH)
+                      self.eaten_ghost, self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH, self.screen)
         clyde = Ghost(self.clyde_x, self.clyde_y, self.targets[3], self.ghost_speeds[3], self.clyde_images,
                       self.clyde_direction, self.clyde_dead, self.clyde_box, 3, self.level, self.powerup,
-                      self.eaten_ghost, self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH)
+                      self.eaten_ghost, self.spooked_images, self.dead_images, self.HEIGHT, self.WIDTH, self.screen)
 
         draw_mics(self.screen, self.font, self.score, self.powerup, self.lives, self.player_images, self.game_over,
                   self.game_won, self.ghost_timers, self.HEIGHT)
@@ -156,6 +157,10 @@ class Game:
         turn_allowed = check_position(self.center_x, self.center_y, self.level, self.direction, self.HEIGHT, self.WIDTH)
 
         if self.moving:
+            if self.selected_level == 6:
+                self.direction = self.direction_command  # Sync direction with user input
+                self.player_x, self.player_y = move_player(self.player_x, self.player_y, self.direction,
+                                                               turn_allowed, self.player_speed)
             if self.selected_level == 6:
                 self.player_x, self.player_y = move_player(self.player_x, self.player_y, self.direction, turn_allowed,
                                                            self.player_speed)
