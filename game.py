@@ -161,9 +161,6 @@ class Game:
                 self.direction = self.direction_command  # Sync direction with user input
                 self.player_x, self.player_y = move_player(self.player_x, self.player_y, self.direction,
                                                                turn_allowed, self.player_speed)
-            if self.selected_level == 6:
-                self.player_x, self.player_y = move_player(self.player_x, self.player_y, self.direction, turn_allowed,
-                                                           self.player_speed)
             if self.selected_level == 1:
                 if not inky.dead and not inky.in_box:
                     self.inky_x, self.inky_y, self.inky_direction = inky.move_inky()
