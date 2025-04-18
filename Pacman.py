@@ -1267,9 +1267,9 @@ while run:
             elif selected_level >= 5:  # All ghosts (parallel)
                 if not blinky.dead and not blinky.in_box:
                     if selected_level == 6:
-                        blinky_x, blinky_y, blinky_direction = blinky.move_blinky()
-                    else:
                         blinky_x, blinky_y, blinky_direction = blinky.move_blinky_astar()
+                    else:
+                        blinky_x, blinky_y, blinky_direction = blinky.move_clyde()
                 else:
                     blinky_x, blinky_y, blinky_direction = blinky.move_clyde()
 
