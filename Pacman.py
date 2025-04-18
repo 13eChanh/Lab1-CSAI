@@ -485,7 +485,7 @@ class Ghost:
 
         path = bfs((current_x, current_y), (target_x, target_y)) 
         current, peak = tracemalloc.get_traced_memory()
-        memory_usage = peak / 1024  # Convert to KB
+        memory_usage = peak / 1024 
         tracemalloc.stop()
         
         if path and len(path) > 1:
@@ -519,7 +519,6 @@ class Ghost:
             self.x_pos = 900
         elif self.x_pos > 900:
             self.x_pos = -30
-
         return self.x_pos, self.y_pos, self.direction
 
     def move_pinky_joreii(self):
@@ -566,7 +565,7 @@ class Ghost:
         
         pinky_path = joreii_dfs((current_x, current_y), (target_x, target_y))
         current, peak = tracemalloc.get_traced_memory()
-        memory_usage = peak / 1024  # Convert to KB
+        memory_usage = peak / 1024  
         tracemalloc.stop()
         
         if pinky_path and len(pinky_path) > 1:
@@ -662,7 +661,7 @@ class Ghost:
                             open_set_hash.add(neighbor)
 
         current, peak = tracemalloc.get_traced_memory()
-        memory_usage = peak / 1024  # Convert to KB
+        memory_usage = peak / 1024 
         tracemalloc.stop()
 
         if not hasattr(self, 'direction') or not self.turns[self.direction]:
