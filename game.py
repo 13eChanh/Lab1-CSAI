@@ -30,8 +30,9 @@ class Game:
         self.reset_game(6)
 
     def reset_game(self, level_num):
-        self.player_x = 50
-        self.player_y = 578
+        # (50,578)
+        self.player_x = 685
+        self.player_y = 50
         self.direction = 1
         self.blinky_x = 430
         self.blinky_y = 328
