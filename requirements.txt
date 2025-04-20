@@ -1,0 +1,2 @@
+- Cài đặt thư viện Pygame (gõ lệnh dưới vào terminal)
+pip install pygame
