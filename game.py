@@ -34,15 +34,15 @@ class Game:
     def reset_game(self, level_num):
         # (650,580) (380,660) (740,740) (110,750)
         # (50,578)
-        randomX=[650,380,740,110,50]
-        randomY=[580,660,740,750,578]
+        randomX=[650,380,50,740,110]
+        randomY=[580,660,578,740,750]
         randomIndex = random.randint(0, len(randomX) - 1)
         self.player_x = randomX[randomIndex]
         self.player_y = randomY[randomIndex]
         self.direction = 1
         self.blinky_x = 430
         self.blinky_y = 328
-        self.blinky_direction = 1
+        self.blinky_direction = 2
         self.inky_x = 370
         self.inky_y = 388
         self.inky_direction = 2
