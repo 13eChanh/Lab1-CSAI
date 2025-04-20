@@ -1,3 +1,5 @@
+import random
+
 from board import boards
 import pygame
 import copy
@@ -30,9 +32,13 @@ class Game:
         self.reset_game(6)
 
     def reset_game(self, level_num):
+        # (650,580) (380,660) (740,740) (110,750)
         # (50,578)
-        self.player_x = 685
-        self.player_y = 50
+        randomX=[650,380,740,110,50]
+        randomY=[580,660,740,750,578]
+        randomIndex = random.randint(0, len(randomX) - 1)
+        self.player_x = randomX[randomIndex]
+        self.player_y = randomY[randomIndex]
         self.direction = 1
         self.blinky_x = 430
         self.blinky_y = 328
